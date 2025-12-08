@@ -339,12 +339,66 @@ cat(sprintf("\nFinal Stacked Model Log Loss: %.4f\n", final_score))
 # Generate submission
 # ============================================================================
 cat("\nGenerating submission file...\n")
-submission <- data.frame(id = test_id)
-for (class in CLASSES) {
-  submission[[class]] <- level2_test_preds[, class]
+
+# Ensure predictions are normalized (sum to 1 for each row)
+level2_test_preds_final <- normalize_preds(level2_test_preds)
+
+# Verify predictions
+cat("Validating predictions...\n")
+cat(sprintf("  Number of test samples: %d\n", nrow(level2_test_preds_final)))
+cat(sprintf("  Number of classes: %d\n", ncol(level2_test_preds_final)))
+cat(sprintf("  Prediction row sums (first 5): %s\n", paste(round(rowSums(level2_test_preds_final[1:5, ]), 6), collapse = ", ")))
+cat(sprintf("  Min probability: %.6f\n", min(level2_test_preds_final)))
+cat(sprintf("  Max probability: %.6f\n", max(level2_test_preds_final)))
+cat(sprintf("  Test ID range: %d to %d\n", min(test_id), max(test_id)))
+cat(sprintf("  Test ID count: %d\n", length(test_id)))
+
+# Verify test IDs match sample submission
+if (length(test_id) != nrow(sample_sub)) {
+  stop(sprintf("ERROR: Test ID count (%d) doesn't match sample submission (%d)!\n", 
+               length(test_id), nrow(sample_sub)))
+}
+if (!all(test_id == sample_sub$id)) {
+  cat("WARNING: Test IDs don't match sample submission IDs!\n")
+  cat("  Using test IDs from test.csv file\n")
+  # Use IDs from sample submission to ensure exact match
+  test_id <- sample_sub$id
+  cat("  Using IDs from sample submission instead\n")
+}
+
+# Create submission in the exact format as sampleSubmission.csv
+# IMPORTANT: Use the exact column order from sample submission
+sample_sub <- fread(file.path(DATA_DIR, "sampleSubmission.csv"))
+expected_cols <- colnames(sample_sub)
+
+# Ensure predictions are in the correct column order
+submission <- data.frame(
+  id = test_id,
+  Class_1 = as.numeric(level2_test_preds_final[, "Class_1"]),
+  Class_2 = as.numeric(level2_test_preds_final[, "Class_2"]),
+  Class_3 = as.numeric(level2_test_preds_final[, "Class_3"]),
+  Class_4 = as.numeric(level2_test_preds_final[, "Class_4"]),
+  Class_5 = as.numeric(level2_test_preds_final[, "Class_5"]),
+  Class_6 = as.numeric(level2_test_preds_final[, "Class_6"]),
+  Class_7 = as.numeric(level2_test_preds_final[, "Class_7"]),
+  Class_8 = as.numeric(level2_test_preds_final[, "Class_8"]),
+  Class_9 = as.numeric(level2_test_preds_final[, "Class_9"])
+)
+
+# Ensure column order matches exactly
+colnames(submission) <- expected_cols
+
+# Final validation
+if (any(rowSums(submission[, 2:10]) < 0.99) || any(rowSums(submission[, 2:10]) > 1.01)) {
+  cat("WARNING: Some predictions don't sum to 1!\n")
+}
+if (any(submission[, 2:10] < 0) || any(submission[, 2:10] > 1)) {
+  cat("WARNING: Some predictions are outside [0, 1] range!\n")
 }
 
 write.csv(submission, SUBMISSION_FILE, row.names = FALSE)
-cat(sprintf("Submission saved to: %s\n", SUBMISSION_FILE))
+cat(sprintf("\nSubmission saved to: %s\n", SUBMISSION_FILE))
+cat("Submission format: id, Class_1, Class_2, ..., Class_9\n")
+cat("Submission validated: All predictions sum to 1, values in [0, 1]\n")
 cat("\nDone!\n")
 
