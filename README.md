@@ -2,6 +2,13 @@
 
 A **multi-class product classification** project tackling the [Otto Group Product Classification Challenge](https://www.kaggle.com/c/otto-group-product-classification-challenge): predicting which of 9 product categories an item belongs to from 93 anonymized numerical features. Implemented in **R** with multiple modeling approaches, feature engineering, and a **stacked ensemble** optimized for multi-class log loss.
 
+**Quick start** (after placing data in `data/` and installing [dependencies](#requirements)):
+
+```r
+setwd("/path/to/OttoProductClassification")  # project root
+source("run_pipeline.R")   # stacking ensemble → output/submission.csv
+```
+
 ---
 
 ## Overview
@@ -28,7 +35,22 @@ A **multi-class product classification** project tackling the [Otto Group Produc
 │   └── ensemble.R         # run_stacking() — Level 1 + Level 2
 ├── run_pipeline.R         # Main entry: stacking ensemble → output/submission.csv
 ├── run_single_models.R    # Single models (RF, MLR, NB, XGB) → output/submission_*.csv
-└── archive/               # Legacy standalone scripts (pre-refactor)
+├── install_deps.R         # One-time package installation
+├── OttoProductClassification.Rproj   # RStudio project
+├── archive/               # Legacy standalone scripts (pre-refactor)
+└── LICENSE                # MIT
+```
+
+### Pipeline flow
+
+```mermaid
+flowchart LR
+  A[data/] --> B[load_otto_data]
+  B --> C[build_features]
+  C --> D[Level 1: RF, XGB, NN, NB]
+  D --> E[Level 2: meta-XGB]
+  E --> F[write_submission]
+  F --> G[output/submission.csv]
 ```
 
 ---
@@ -55,6 +77,20 @@ A **multi-class product classification** project tackling the [Otto Group Produc
 
 ---
 
+## Results
+
+After running the stacking pipeline, the script prints Level 1 and Level 2 log loss. You can record your best **CV log loss** here after a full run (e.g. `run_pipeline.R`):
+
+| Model / pipeline      | CV log loss (example) |
+|-----------------------|------------------------|
+| Stacking (Level 2)    | —                      |
+| XGBoost (single)      | —                      |
+| Random Forest         | —                      |
+
+Filling this in shows recruiters you ran the pipeline and care about outcomes.
+
+---
+
 ## Getting Started
 
 ### Requirements
@@ -62,11 +98,19 @@ A **multi-class product classification** project tackling the [Otto Group Produc
 - R (tested with R 4.x)
 - Packages: `data.table`, `xgboost`, `randomForest`, `nnet`, `e1071`, `caret`
 
-Install dependencies in R:
+**Option A** — one-time setup from project root:
+
+```r
+source("install_deps.R")
+```
+
+**Option B** — install manually:
 
 ```r
 install.packages(c("data.table", "xgboost", "randomForest", "nnet", "e1071", "caret"))
 ```
+
+Opening `OttoProductClassification.Rproj` in RStudio sets the project root automatically.
 
 ### Data
 
@@ -106,6 +150,25 @@ Outputs: `output/submission_random_forest.csv`, `submission_multinomial_logistic
 - **Stacked ensemble:** diverse base models (tree, gradient boosting, neural net, Naive Bayes) combined via a meta-learner
 - **Reproducibility:** fixed seeds, consistent train/test splits and normalization
 - **Organized pipeline:** shared `R/` modules (config, data, features, models, ensemble, submission) and two entry points (`run_pipeline.R`, `run_single_models.R`)
+
+---
+
+## Skills demonstrated
+
+- **R:** data.table, caret, custom functions, modular sourcing
+- **ML:** multi-class classification, stacked ensembles, 5-fold CV, log loss
+- **Feature engineering:** log/sqrt transforms, scaling, row-level aggregates
+- **Models:** Random Forest, XGBoost, multinomial logistic regression, Naive Bayes, single-hidden-layer neural net (nnet)
+- **Reproducibility:** fixed seeds, consistent splits, single entry-point scripts
+
+---
+
+## Future improvements
+
+- [ ] Hyperparameter tuning (e.g. `tidymodels` or grid search over XGBoost/RF params)
+- [ ] Additional features (interactions, PCA, or domain-specific aggregates)
+- [ ] `renv` or `packrat` for lockfile-based dependency reproducibility
+- [ ] Unit tests for `logloss()`, `normalize_preds()`, and data loading
 
 ---
 
